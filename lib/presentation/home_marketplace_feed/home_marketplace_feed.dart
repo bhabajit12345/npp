@@ -134,7 +134,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
             'imageUrl': firstImage,
             'category': listing['category']?['name'] ?? 'General',
             'isSponsored': listing['is_featured'] ?? false,
-            'isFavorite': _favoriteListings.contains(listing['id'].toString()),
+            'isFavorite': _favoriteListings.contains(listing['id']),
             'views_count': listing['views_count'] ?? 0,
             'condition': listing['condition'] ?? 'good',
             'seller': listing['seller'],
