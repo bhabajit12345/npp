@@ -335,15 +335,15 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
         return;
       }
 
-      if (_favoriteListings.contains(listingId.toString())) {
+      if (_favoriteListings.contains(listingId)) {
         await _favoriteService.removeFavorite(listingId);
         setState(() {
-          _favoriteListings.remove(listingId.toString());
+          _favoriteListings.remove(listingId);
         });
       } else {
         await _favoriteService.addFavorite(listingId);
         setState(() {
-          _favoriteListings.add(listingId.toString());
+          _favoriteListings.add(listingId);
         });
       }
 
@@ -353,7 +353,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
             _listings.indexWhere((listing) => listing['id'] == listingId);
         if (index != -1) {
           _listings[index]['isFavorite'] =
-              _favoriteListings.contains(listingId.toString());
+              _favoriteListings.contains(listingId);
         }
       });
     } catch (error) {
@@ -574,7 +574,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
 
                           final listing = _filteredListings[index];
                           final isFavorite =
-                              _favoriteListings.contains(listing['id'].toString());
+                              _favoriteListings.contains(listing['id']);
 
                           return Padding(
                             padding: EdgeInsets.only(bottom: 2.h),
@@ -584,7 +584,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
                               onTap: () => _onListingTap(listing),
                               onLongPress: () => _onListingLongPress(listing),
                               onFavoriteTap: () =>
-                                  _toggleFavorite(listing['id'].toString()),
+                                  _toggleFavorite(listing['id']),
                             ),
                           );
                         },
