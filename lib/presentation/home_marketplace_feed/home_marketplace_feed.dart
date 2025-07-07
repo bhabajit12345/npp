@@ -23,15 +23,12 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
   int _currentIndex = 0;
   String _selectedCategory = 'All';
   String _selectedLocation = 'New York, NY';
+
+  // Stub for favorite listings (always empty)
   Set<String> _favoriteListings = {};
 
   // Real data from Supabase
-  List<Map<String, dynamic>> _listings = [];
-  List<Map<String, dynamic>> _categories = [];
-
-  final CategoryService _categoryService = CategoryService();
-  final ListingService _listingService = ListingService();
-  final FavoriteService _favoriteService = FavoriteService();
+  List<Map<String, dynamicService();
 
   final List<String> _locations = [
     'New York, NY',
@@ -54,7 +51,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
     await Future.wait([
       _loadCategories(),
       _loadListings(),
-      _loadFavorites(),
+      _loadFavorites(), // still called, but is a stub
     ]);
   }
 
@@ -134,7 +131,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
             'imageUrl': firstImage,
             'category': listing['category']?['name'] ?? 'General',
             'isSponsored': listing['is_featured'] ?? false,
-            'isFavorite': _favoriteListings.contains(listing['id']),
+            'isFavorite': false, // Always false (stub)
             'views_count': listing['views_count'] ?? 0,
             'condition': listing['condition'] ?? 'good',
             'seller': listing['seller'],
@@ -152,24 +149,8 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
     }
   }
 
-  Future<void> _loadFavorites() async {
-  try {
-    final authService = AuthService();
-    if (authService.isAuthenticated()) {
-      final favorites = await _favoriteService.getUserFavorites();
-
-      final Set<String> ids = favorites
-          .map<String>((fav) => fav['listing_id'].toString())
-          .toSet();
-
-      setState(() {
-        _favoriteListings = ids;
-      });
-    }
-  } catch (error) {
-    debugPrint('❌ Failed to load favorites: $error');
-  }
-}
+  // STUB: Returns nothing, doesn't set state
+  Future<void> _loadFavorites() async {}
 
   String _formatTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
@@ -222,7 +203,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
             "https://images.unsplash.com/photo-1581539250439-c96689b516dd?w=400&h=300&fit=crop",
         "category": "Furniture",
         "isSponsored": false,
-        "isFavorite": true,
+        "isFavorite": false,
       },
       {
         "id": "4",
@@ -256,7 +237,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
     await Future.wait([
       _loadCategories(),
       _loadListings(),
-      _loadFavorites(),
+      _loadFavorites(), // still called, but is a stub
     ]);
 
     setState(() {
@@ -308,7 +289,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
             'imageUrl': firstImage,
             'category': listing['category']?['name'] ?? 'General',
             'isSponsored': listing['is_featured'] ?? false,
-            'isFavorite': _favoriteListings.contains(listing['id']),
+            'isFavorite': false, // Always false (stub)
             'views_count': listing['views_count'] ?? 0,
             'condition': listing['condition'] ?? 'good',
             'seller': listing['seller'],
@@ -324,48 +305,8 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
     }
   }
 
-  Future<void> _toggleFavorite(String listingId) async {
-    HapticFeedback.lightImpact();
-
-    try {
-      final authService = AuthService();
-      if (!authService.isAuthenticated()) {
-        // Navigate to login if not authenticated
-        Navigator.pushNamed(context, AppRoutes.loginScreen);
-        return;
-      }
-
-      if (_favoriteListings.contains(listingId)) {
-        await _favoriteService.removeFavorite(listingId);
-        setState(() {
-          _favoriteListings.remove(listingId);
-        });
-      } else {
-        await _favoriteService.addFavorite(listingId);
-        setState(() {
-          _favoriteListings.add(listingId);
-        });
-      }
-
-      // Update the listing's favorite status in the list
-      setState(() {
-        final index =
-            _listings.indexWhere((listing) => listing['id'] == listingId);
-        if (index != -1) {
-          _listings[index]['isFavorite'] =
-              _favoriteListings.contains(listingId);
-        }
-      });
-    } catch (error) {
-      debugPrint('❌ Failed to toggle favorite: $error');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to update favorite'),
-          backgroundColor: AppTheme.lightTheme.colorScheme.error,
-        ),
-      );
-    }
-  }
+  // STUB: Does nothing, but exists for compatibility
+  Future<void> _toggleFavorite(String listingId) async {}
 
   void _onCategorySelected(String category) {
     setState(() {
@@ -378,7 +319,6 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
     setState(() {
       _selectedLocation = location;
     });
-    // Could trigger location-based filtering here
     _loadListings();
   }
 
@@ -573,8 +513,8 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
                           }
 
                           final listing = _filteredListings[index];
-                          final isFavorite =
-                              _favoriteListings.contains(listing['id']);
+                          // Always false (stub)
+                          final isFavorite = false;
 
                           return Padding(
                             padding: EdgeInsets.only(bottom: 2.h),
