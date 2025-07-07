@@ -7,6 +7,83 @@ import './widgets/category_chip_widget.dart';
 import './widgets/listing_card_widget.dart';
 import './widgets/location_selector_widget.dart';
 
+// Dummy services, replace with your real ones if needed
+class CategoryService {
+  Future<List<Map<String, dynamic>>> getMainCategories() async {
+    await Future.delayed(Duration(milliseconds: 200));
+    return [
+      {'id': '1', 'name': 'Electronics'},
+      {'id': '2', 'name': 'Furniture'},
+      {'id': '3', 'name': 'Fashion'},
+      {'id': '4', 'name': 'Sports'},
+      {'id': '5', 'name': 'Automotive'},
+      {'id': '6', 'name': 'Books'},
+      {'id': '7', 'name': 'Home & Garden'},
+    ];
+  }
+}
+
+class ListingService {
+  Future<List<Map<String, dynamic>>> getActiveListings({int limit = 20, int offset = 0}) async {
+    await Future.delayed(Duration(milliseconds: 200));
+    return _mockListings().skip(offset).take(limit).toList();
+  }
+  Future<List<Map<String, dynamic>>> getListingsByCategory(String categoryId, {int limit = 20, int offset = 0}) async {
+    await Future.delayed(Duration(milliseconds: 200));
+    return _mockListings()
+      .where((l) => l['categoryId'] == categoryId)
+      .skip(offset)
+      .take(limit)
+      .toList();
+  }
+  List<Map<String, dynamic>> _mockListings() {
+    return [
+      {
+        "id": "1",
+        "title": "iPhone 14 Pro Max - Excellent Condition",
+        "price": 899,
+        "location": "Manhattan, NY",
+        "created_at": DateTime.now().subtract(Duration(hours: 2)).toIso8601String(),
+        "images": ["https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400&h=300&fit=crop"],
+        "category": {'name': 'Electronics'},
+        "categoryId": "1",
+        "is_featured": true,
+        "views_count": 10,
+        "condition": "good",
+        "seller": "user1"
+      },
+      {
+        "id": "2",
+        "title": "MacBook Air M2 - Brand New Sealed",
+        "price": 1199,
+        "location": "Brooklyn, NY",
+        "created_at": DateTime.now().subtract(Duration(hours: 4)).toIso8601String(),
+        "images": ["https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=300&fit=crop"],
+        "category": {'name': 'Electronics'},
+        "categoryId": "1",
+        "is_featured": false,
+        "views_count": 5,
+        "condition": "new",
+        "seller": "user2"
+      },
+      {
+        "id": "3",
+        "title": "Modern Dining Table Set",
+        "price": 450,
+        "location": "Queens, NY",
+        "created_at": DateTime.now().subtract(Duration(hours: 6)).toIso8601String(),
+        "images": ["https://images.unsplash.com/photo-1581539250439-c96689b516dd?w=400&h=300&fit=crop"],
+        "category": {'name': 'Furniture'},
+        "categoryId": "2",
+        "is_featured": false,
+        "views_count": 2,
+        "condition": "used",
+        "seller": "user3"
+      },
+    ];
+  }
+}
+
 class HomeMarketplaceFeed extends StatefulWidget {
   const HomeMarketplaceFeed({Key? key}) : super(key: key);
 
@@ -14,8 +91,7 @@ class HomeMarketplaceFeed extends StatefulWidget {
   State<HomeMarketplaceFeed> createState() => _HomeMarketplaceFeedState();
 }
 
-class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
-    with TickerProviderStateMixin {
+class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed> with TickerProviderStateMixin {
   late ScrollController _scrollController;
   bool _isLoading = false;
   bool _isRefreshing = false;
@@ -24,11 +100,11 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
   String _selectedCategory = 'All';
   String _selectedLocation = 'New York, NY';
 
-  // Stub for favorite listings (always empty)
-  Set<String> _favoriteListings = {};
+  final CategoryService _categoryService = CategoryService();
+  final ListingService _listingService = ListingService();
 
-  // Real data from Supabase
-  List<Map<String, dynamicService();
+  List<Map<String, dynamic>> _categories = [];
+  List<Map<String, dynamic>> _listings = [];
 
   final List<String> _locations = [
     'New York, NY',
@@ -51,7 +127,6 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
     await Future.wait([
       _loadCategories(),
       _loadListings(),
-      _loadFavorites(), // still called, but is a stub
     ]);
   }
 
@@ -78,7 +153,6 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
     } catch (error) {
       setState(() {
         _isLoadingCategories = false;
-        // Fallback to default categories if Supabase fails
         _categories = [
           {'id': 'all', 'name': 'All'},
           {'id': '1', 'name': 'Electronics'},
@@ -90,7 +164,6 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
           {'id': '7', 'name': 'Home & Garden'},
         ];
       });
-      debugPrint('❌ Failed to load categories: $error');
     }
   }
 
@@ -108,8 +181,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
             (cat) => cat['name'] == _selectedCategory,
             orElse: () => {'id': null})['id'];
         if (categoryId != null && categoryId != 'all') {
-          listings = await _listingService.getListingsByCategory(categoryId,
-              limit: 20);
+          listings = await _listingService.getListingsByCategory(categoryId, limit: 20);
         } else {
           listings = await _listingService.getActiveListings(limit: 20);
         }
@@ -131,7 +203,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
             'imageUrl': firstImage,
             'category': listing['category']?['name'] ?? 'General',
             'isSponsored': listing['is_featured'] ?? false,
-            'isFavorite': false, // Always false (stub)
+            'isFavorite': false, // always false
             'views_count': listing['views_count'] ?? 0,
             'condition': listing['condition'] ?? 'good',
             'seller': listing['seller'],
@@ -142,15 +214,10 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
     } catch (error) {
       setState(() {
         _isLoading = false;
-        // Fallback to mock data if Supabase fails
         _listings = _getMockListings();
       });
-      debugPrint('❌ Failed to load listings: $error');
     }
   }
-
-  // STUB: Returns nothing, doesn't set state
-  Future<void> _loadFavorites() async {}
 
   String _formatTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
@@ -205,24 +272,11 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
         "isSponsored": false,
         "isFavorite": false,
       },
-      {
-        "id": "4",
-        "title": "2020 Honda Civic - Low Mileage",
-        "price": "\$18500",
-        "location": "Bronx, NY",
-        "timePosted": "1 day ago",
-        "imageUrl":
-            "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop",
-        "category": "Automotive",
-        "isSponsored": false,
-        "isFavorite": false,
-      },
     ];
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       _loadMoreListings();
     }
   }
@@ -237,7 +291,6 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
     await Future.wait([
       _loadCategories(),
       _loadListings(),
-      _loadFavorites(), // still called, but is a stub
     ]);
 
     setState(() {
@@ -253,23 +306,19 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
     });
 
     try {
-      // Load more listings with offset
       List<Map<String, dynamic>> moreListings;
       final offset = _listings.length;
 
       if (_selectedCategory == 'All') {
-        moreListings =
-            await _listingService.getActiveListings(limit: 10, offset: offset);
+        moreListings = await _listingService.getActiveListings(limit: 10, offset: offset);
       } else {
         final categoryId = _categories.firstWhere(
             (cat) => cat['name'] == _selectedCategory,
             orElse: () => {'id': null})['id'];
         if (categoryId != null && categoryId != 'all') {
-          moreListings = await _listingService.getListingsByCategory(categoryId,
-              limit: 10);
+          moreListings = await _listingService.getListingsByCategory(categoryId, limit: 10, offset: offset);
         } else {
-          moreListings = await _listingService.getActiveListings(
-              limit: 10, offset: offset);
+          moreListings = await _listingService.getActiveListings(limit: 10, offset: offset);
         }
       }
 
@@ -289,7 +338,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
             'imageUrl': firstImage,
             'category': listing['category']?['name'] ?? 'General',
             'isSponsored': listing['is_featured'] ?? false,
-            'isFavorite': false, // Always false (stub)
+            'isFavorite': false,
             'views_count': listing['views_count'] ?? 0,
             'condition': listing['condition'] ?? 'good',
             'seller': listing['seller'],
@@ -301,18 +350,17 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
       setState(() {
         _isLoading = false;
       });
-      debugPrint('❌ Failed to load more listings: $error');
     }
   }
 
-  // STUB: Does nothing, but exists for compatibility
+  // Stub: does nothing
   Future<void> _toggleFavorite(String listingId) async {}
 
   void _onCategorySelected(String category) {
     setState(() {
       _selectedCategory = category;
     });
-    _loadListings(); // Reload listings when category changes
+    _loadListings();
   }
 
   void _onLocationChanged(String location) {
@@ -328,86 +376,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
 
   void _onListingLongPress(Map<String, dynamic> listing) {
     HapticFeedback.mediumImpact();
-    _showQuickActions(listing);
-  }
-
-  void _showQuickActions(Map<String, dynamic> listing) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: AppTheme.lightTheme.colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(
-                color: AppTheme.lightTheme.colorScheme.outline,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: CustomIconWidget(
-                      iconName: 'share',
-                      color: AppTheme.lightTheme.colorScheme.primary,
-                      size: 24,
-                    ),
-                    title: Text(
-                      'Share',
-                      style: AppTheme.lightTheme.textTheme.bodyLarge,
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Handle share
-                    },
-                  ),
-                  ListTile(
-                    leading: CustomIconWidget(
-                      iconName: 'report',
-                      color: AppTheme.lightTheme.colorScheme.error,
-                      size: 24,
-                    ),
-                    title: Text(
-                      'Report',
-                      style: AppTheme.lightTheme.textTheme.bodyLarge,
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Handle report
-                    },
-                  ),
-                  ListTile(
-                    leading: CustomIconWidget(
-                      iconName: 'visibility_off',
-                      color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
-                      size: 24,
-                    ),
-                    title: Text(
-                      'Hide similar',
-                      style: AppTheme.lightTheme.textTheme.bodyLarge,
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Handle hide similar
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    // Optionally show a modal or quick actions
   }
 
   List<Map<String, dynamic>> get _filteredListings {
@@ -415,8 +384,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
       return _listings;
     }
     return _listings
-        .where(
-            (listing) => (listing['category'] as String) == _selectedCategory)
+        .where((listing) => (listing['category'] as String) == _selectedCategory)
         .toList();
   }
 
@@ -427,13 +395,11 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
       body: SafeArea(
         child: Column(
           children: [
-            // Sticky Header
             Container(
               color: AppTheme.lightTheme.colorScheme.surface,
               padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
               child: Column(
                 children: [
-                  // Location and Notification Row
                   Row(
                     children: [
                       Expanded(
@@ -445,14 +411,11 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
                       ),
                       SizedBox(width: 3.w),
                       GestureDetector(
-                        onTap: () {
-                          // Handle notification tap
-                        },
+                        onTap: () {},
                         child: Container(
                           padding: EdgeInsets.all(2.w),
                           decoration: BoxDecoration(
-                            color: AppTheme
-                                .lightTheme.colorScheme.primaryContainer,
+                            color: AppTheme.lightTheme.colorScheme.primaryContainer,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: CustomIconWidget(
@@ -465,7 +428,6 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
                     ],
                   ),
                   SizedBox(height: 1.h),
-                  // Category Chips
                   SizedBox(
                     height: 5.h,
                     child: _isLoadingCategories
@@ -482,10 +444,8 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
                                 padding: EdgeInsets.only(right: 2.w),
                                 child: CategoryChipWidget(
                                   category: _categories[index]['name']!,
-                                  isSelected: _selectedCategory ==
-                                      _categories[index]['name'],
-                                  onTap: () => _onCategorySelected(
-                                      _categories[index]['name']!),
+                                  isSelected: _selectedCategory == _categories[index]['name'],
+                                  onTap: () => _onCategorySelected(_categories[index]['name']!),
                                 ),
                               );
                             },
@@ -494,7 +454,6 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
                 ],
               ),
             ),
-            // Main Content
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _refreshListings,
@@ -503,19 +462,14 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
                     ? _buildEmptyState()
                     : ListView.builder(
                         controller: _scrollController,
-                        padding: EdgeInsets.symmetric(
-                            horizontal: 4.w, vertical: 1.h),
-                        itemCount:
-                            _filteredListings.length + (_isLoading ? 1 : 0),
+                        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+                        itemCount: _filteredListings.length + (_isLoading ? 1 : 0),
                         itemBuilder: (context, index) {
                           if (index == _filteredListings.length) {
                             return _buildLoadingIndicator();
                           }
-
                           final listing = _filteredListings[index];
-                          // Always false (stub)
                           final isFavorite = false;
-
                           return Padding(
                             padding: EdgeInsets.only(bottom: 2.h),
                             child: ListingCardWidget(
@@ -523,8 +477,7 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
                               isFavorite: isFavorite,
                               onTap: () => _onListingTap(listing),
                               onLongPress: () => _onListingLongPress(listing),
-                              onFavoriteTap: () =>
-                                  _toggleFavorite(listing['id']),
+                              onFavoriteTap: () => _toggleFavorite(listing['id']),
                             ),
                           );
                         },
@@ -547,7 +500,6 @@ class _HomeMarketplaceFeedState extends State<HomeMarketplaceFeed>
 
           switch (index) {
             case 0:
-              // Already on Home
               break;
             case 1:
               Navigator.pushNamed(context, AppRoutes.searchAndFilters);
