@@ -14,33 +14,19 @@ class SupabaseService {
 
   SupabaseService._internal();
 
-  // Environment variables with fallback handling
-  static const String supabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: '',
-  );
-  static const String supabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue: '',
-  );
+  // 🔐 HARDCODED Supabase credentials for local testing
+  // 🚨 Replace these with your real values
+  static const String supabaseUrl = 'https://rsskivonmfqrzxbmxrkl.supabase.co';
+  static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzc2tpdm9ubWZxcnp4Ym14cmtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2NTUxMTgsImV4cCI6MjA2NzIzMTExOH0.uYjeiqI7eNGZqnip4p-20AL6NT9YCos15gWY-lP82As';
 
-  // Static initialization method with improved error handling
+  // Static initialization method
   static Future<void> initialize() async {
-    // Prevent multiple simultaneous initialization attempts
-    if (_instance._isInitialized || _initializationInProgress) {
-      return;
-    }
-
+    if (_instance._isInitialized || _initializationInProgress) return;
     _initializationInProgress = true;
 
     try {
-      // Validate environment variables
-      if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-        throw SupabaseException(
-          'Environment variables SUPABASE_URL and SUPABASE_ANON_KEY must be defined. '
-          'Use --dart-define=SUPABASE_URL=your_url --dart-define=SUPABASE_ANON_KEY=your_key when running the app.',
-        );
-      }
+      debugPrint('🧪 Using Supabase URL: $supabaseUrl');
+      debugPrint('🧪 Using Supabase Key: ${supabaseAnonKey.substring(0, 6)}...');
 
       // Validate URL format
       if (!_isValidUrl(supabaseUrl)) {
@@ -63,7 +49,6 @@ class SupabaseService {
     }
   }
 
-  // Retry mechanism for Supabase initialization
   static Future<void> _initializeWithRetry({int maxRetries = 3}) async {
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -76,55 +61,46 @@ class SupabaseService {
             autoRefreshToken: true,
           ),
         );
-        return; // Success, exit retry loop
+        return;
       } catch (e) {
         debugPrint('❌ Supabase initialization attempt $attempt failed: $e');
-
         if (attempt == maxRetries) {
-          throw SupabaseException(
-            'Failed to initialize Supabase after $maxRetries attempts. Last error: $e',
-          );
+          throw SupabaseException('Failed to initialize Supabase: $e');
         }
-
-        // Wait before retrying (exponential backoff)
         await Future.delayed(Duration(milliseconds: 1000 * attempt));
       }
     }
   }
 
-  // URL validation helper
   static bool _isValidUrl(String url) {
     try {
       final uri = Uri.parse(url);
       return uri.hasScheme &&
           (uri.scheme == 'http' || uri.scheme == 'https') &&
           uri.host.isNotEmpty;
-    } catch (e) {
+    } catch (_) {
       return false;
     }
   }
 
-  // URL masking for security in logs
   static String _maskUrl(String url) {
     try {
       final uri = Uri.parse(url);
       return '${uri.scheme}://${uri.host}';
-    } catch (e) {
+    } catch (_) {
       return 'invalid-url';
     }
   }
 
-  // Client getter with better error handling
   SupabaseClient get client {
     if (!_isInitialized) {
       throw SupabaseException(
-        'Supabase not initialized. Call SupabaseService.initialize() first or check your environment variables.',
+        'Supabase not initialized. Call SupabaseService.initialize() first.',
       );
     }
     return _client;
   }
 
-  // Async client getter for backward compatibility
   Future<SupabaseClient> get clientAsync async {
     if (!_isInitialized) {
       await initialize();
@@ -132,30 +108,10 @@ class SupabaseService {
     return _client;
   }
 
-  // Safe client getter that returns null if not initialized
-  SupabaseClient? get safeClient {
-    return _isInitialized ? _client : null;
-  }
+  SupabaseClient? get safeClient => _isInitialized ? _client : null;
 
-  // Initialization status
   bool get isInitialized => _isInitialized;
 
-  // Connection status check
-  Future<bool> checkConnection() async {
-    try {
-      if (!_isInitialized) return false;
-
-      // Simple query to test connection
-      await _client.from('user_profiles').select('id').limit(1).maybeSingle();
-
-      return true;
-    } catch (e) {
-      debugPrint('❌ Connection check failed: $e');
-      return false;
-    }
-  }
-
-  // Auth helpers with null safety
   bool get isAuthenticated {
     try {
       return _isInitialized && _client.auth.currentUser != null;
@@ -182,15 +138,12 @@ class SupabaseService {
       return null;
     }
   }
-
-  // Enhanced sign out with error handling
-  Future<void> signOut() async {
+Future<void> signOut() async {
     try {
       if (!_isInitialized) {
         debugPrint('⚠️ Cannot sign out: Supabase not initialized');
         return;
       }
-
       await _client.auth.signOut();
       debugPrint('✅ User signed out successfully');
     } catch (e) {
@@ -199,20 +152,17 @@ class SupabaseService {
     }
   }
 
-  // Auth state stream with error handling
   Stream<AuthState> get authStateChanges {
     if (!_isInitialized) {
       throw SupabaseException(
         'Cannot access auth state: Supabase not initialized',
       );
     }
-
     return _client.auth.onAuthStateChange.handleError((error) {
       debugPrint('❌ Auth state change error: $error');
     });
   }
 
-  // Cleanup method for testing or reinitialization
   static Future<void> dispose() async {
     try {
       if (_instance._isInitialized) {
@@ -225,7 +175,17 @@ class SupabaseService {
     }
   }
 
-  // Health check method
+  Future<bool> checkConnection() async {
+    try {
+      if (!_isInitialized) return false;
+      await _client.from('user_profiles').select('id').limit(1).maybeSingle();
+      return true;
+    } catch (e) {
+      debugPrint('❌ Connection check failed: $e');
+      return false;
+    }
+  }
+
   Future<Map<String, dynamic>> getHealthStatus() async {
     final status = <String, dynamic>{
       'initialized': _isInitialized,
@@ -243,10 +203,8 @@ class SupabaseService {
   }
 }
 
-// Custom exception class for better error handling
 class SupabaseException implements Exception {
   final String message;
-
   const SupabaseException(this.message);
 
   @override
