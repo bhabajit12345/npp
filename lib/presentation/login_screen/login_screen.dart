@@ -31,16 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _emailController.addListener(_validateForm);
-    _passwordController.addListener(_validateForm);
-
-    // Add focus listeners to handle keyboard behavior
-    _emailFocusNode.addListener(() {
-      setState(() {}); // Rebuild to update UI based on focus
-    });
-    _passwordFocusNode.addListener(() {
-      setState(() {}); // Rebuild to update UI based on focus
-    });
+    // No need for controller or focus listeners!
   }
 
   @override
@@ -200,12 +191,10 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
         backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
-        resizeToAvoidBottomInset:
-            true, // Allow screen to resize when keyboard appears
+        resizeToAvoidBottomInset: true,
         body: SafeArea(
             child: GestureDetector(
                 onTap: () {
-                  // Dismiss keyboard when tapping outside text fields
                   FocusScope.of(context).unfocus();
                 },
                 child: SingleChildScrollView(
@@ -283,7 +272,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 2))),
           onChanged: (value) => _validateForm(),
           onFieldSubmitted: (value) {
-            // Move focus to password field when user presses next
             FocusScope.of(context).requestFocus(_passwordFocusNode);
           }),
       if (_emailError != null) ...[
@@ -339,7 +327,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 2))),
           onChanged: (value) => _validateForm(),
           onFieldSubmitted: (value) {
-            // Trigger login when user presses done
             if (_isFormValid) {
               _handleLogin();
             }
@@ -360,10 +347,7 @@ class _LoginScreenState extends State<LoginScreen> {
         alignment: Alignment.centerRight,
         child: TextButton(
             onPressed: () {
-              // Dismiss keyboard before navigating
               FocusScope.of(context).unfocus();
-
-              // Navigate to forgot password screen
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                   content: Text('Forgot password functionality coming soon!'),
                   behavior: SnackBarBehavior.floating));
@@ -383,7 +367,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 backgroundColor: _isFormValid
                     ? AppTheme.lightTheme.primaryColor
                     : AppTheme.lightTheme.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.3),
+                        .withAlpha(76),
                 foregroundColor: Colors.white,
                 elevation: _isFormValid ? 2.0 : 0,
                 shape: RoundedRectangleBorder(
@@ -481,7 +465,6 @@ class _LoginScreenState extends State<LoginScreen> {
               color: AppTheme.lightTheme.colorScheme.onSurfaceVariant)),
       TextButton(
           onPressed: () {
-            // Dismiss keyboard before navigating
             FocusScope.of(context).unfocus();
             Navigator.pushNamed(context, AppRoutes.registrationScreen);
           },
