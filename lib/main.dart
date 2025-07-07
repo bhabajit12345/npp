@@ -106,8 +106,8 @@ class _AppInitializerState extends State<AppInitializer> {
   Future<void> _initializeSupabaseWithFallback() async {
     try {
       // Check if environment variables are available
-      const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-      const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+      const supabaseUrl = 'https://rsskivonmfqrzxbmxrkl.supabase.co';
+      const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzc2tpdm9ubWZxcnp4Ym14cmtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2NTUxMTgsImV4cCI6MjA2NzIzMTExOH0.uYjeiqI7eNGZqnip4p-20AL6NT9YCos15gWY-lP82As';
 
       if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
         debugPrint('⚠️ Supabase credentials not found, enabling offline mode');
